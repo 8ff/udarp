@@ -1,4 +1,4 @@
-# Universal DigitAl Radio Protocol written in Golang
+# Universal Digital Radio Protocol written in Golang
 
 ## Usage
 ### Decoding with test data<br>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+
+<style>
+#map-container {
+    width: 100%;
+    height: 600px;
+}
+</style>
+
+<!-- TODO: Add the value of data-initial-token with a JWT
+dynamically generated on the server -->
+<script src="https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.core.js"
+    crossorigin async
+    data-callback="initMapKit"
+    data-libraries="map"
+    data-initial-token="{{.jwtToken}}"></script>
+<script type="module">
+/**
+ * Wait for MapKit JS to be loaded by the script tag,
+ * calls `mapkit.init` to set authorizationCallback with your JWT.
+ */
+const setupMapKitJs = async() => {
+    if (!window.mapkit || window.mapkit.loadedLibraries.length === 0) {
+        // mapkit.core.js or the libraries are not loaded yet.
+        // Set up the callback and wait for it to be called.
+        await new Promise(resolve => { window.initMapKit = resolve });
+
+        // Clean up
+        delete window.initMapKit;
+    }
+
+
+
+    mapkit.init({
+            authorizationCallback: function(done) {
+
+              fetch('/services/jwt')
+              .then(response => response.json())
+              .then(result => {
+                done(result.token)
+              })
+
+            }
+        });
+};
+
+/**
+ * Script Entry Point
+ */
+const main = async() => {
+    await setupMapKitJs();
+
+    const cupertino = new mapkit.CoordinateRegion(
+        new mapkit.Coordinate(37.3316850890998, -122.030067374026),
+        new mapkit.CoordinateSpan(0.167647972, 0.354985255)
+    );
+
+    // Create a map in the element whose ID is "map-container"
+    const map = new mapkit.Map("map-container", { isScrollEnabled:true, isZoomEnabled: true, showsZoomControl: true, colorScheme: mapkit.Map.ColorSchemes.Dark });
+        map.region = cupertino;
+        map._allowWheelToZoom = true;
+    };
+
+main();
+
+</script>
+</head>
+
+<body>
+    <div id="map-container"></div>
+</body>
+</html>

@@ -1,0 +1,1 @@
+cat samples/test1.raw| go run *.go --stdin

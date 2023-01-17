@@ -1,0 +1,1 @@
+/opt/rigctrl_4.4/bin/rigctld -m 2014 -r /dev/ttyUSB0 -t 4532 -s 9600 --set-conf=data_bits=8 --set-conf=stop_bits=1 --set-conf=serial_parity=None --set-conf=serial_handshake=None --set-conf=dtr_state=OFF --set-conf=rts_state=OFF

@@ -1851,6 +1851,8 @@ func runAllTests() {
 }
 
 func main() {
+	/////// TODO TRY USING SOFT DECODING
+
 	// Change all functions to take params and data and return stats so they all can be compared
 	// testRSV3()
 	// testNoCrcV3()

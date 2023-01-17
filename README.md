@@ -1,4 +1,4 @@
-# HF Digital Mode written in Golang
+# Universal DigitAl Radio Protocol written in Golang
 
 ## Usage
 ### Decoding with test data<br>

@@ -21,11 +21,12 @@ PLAYBACK_DEVICE=756435816c28459543a90b1bcfd5800a CAPTURE_DEVICE=d26717373e0a8e99
 ```
 
 ## TODO:
-- [ ] Merge soft decoding/viterbi/rs decoding
+- [x] Merge soft decoding/viterbi/rs decoding
 - [x] Break up main.go into multiple files
-- [ ] Soft decoding<br>
-https://www.gaussianwaves.com/2009/12/hard-and-soft-decision-decoding-2/<br>
-https://www.tutorialspoint.com/hard-and-soft-decision-decoding<br>
+- [x] Soft decoding
 - [x] Merge gfsk generator
-- [ ] UI
+- [ ] Stress test with real tranceivers
+
+## Future
+- [ ] Web UI
 - [ ] Maps in UI in [ui/maps](ui/maps)

@@ -8,9 +8,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/8ff/dhf64/pkg/crc"
-	"github.com/8ff/dhf64/pkg/misc"
-	"github.com/8ff/dhf64/pkg/rs"
+	"github.com/8ff/udarp/pkg/crc"
+	"github.com/8ff/udarp/pkg/misc"
+	"github.com/8ff/udarp/pkg/rs"
 )
 
 /*

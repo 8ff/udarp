@@ -3,7 +3,7 @@ package euclidean
 import (
 	"math"
 
-	"github.com/8ff/dhf64/pkg/misc"
+	"github.com/8ff/udarp/pkg/misc"
 )
 
 func EuclideanDistance(min, max float64, constraint int, data []float64) []int {

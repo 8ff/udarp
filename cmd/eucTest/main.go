@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/8ff/dhf64/pkg/euclidean"
+	"github.com/8ff/udarp/pkg/euclidean"
 )
 
 func main() {

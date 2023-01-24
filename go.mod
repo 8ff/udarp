@@ -1,4 +1,4 @@
-module github.com/8ff/dhf64
+module github.com/8ff/udarp
 
 go 1.19
 

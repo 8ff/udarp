@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/8ff/dhf64/pkg/misc"
+	"github.com/8ff/udarp/pkg/misc"
 	"github.com/gen2brain/malgo"
 )
 

@@ -4,13 +4,13 @@
 ## Usage
 ### Decoding with test data<br>
 ```bash
-cd cmd/dhf64
+cd cmd/udarp
 ./scripts/testStdin.sh < samples/test.raw
 ```
 
 ### List audio devices
 ```bash
-cd cmd/dhf64
+cd cmd/udarp
 go run *.go -l
 ```
 

@@ -20,6 +20,7 @@ import (
 	"github.com/8ff/udarp/pkg/audio"
 	"github.com/8ff/udarp/pkg/buffer"
 	"github.com/8ff/udarp/pkg/misc"
+	"github.com/8ff/udarp/pkg/txControl"
 
 	"github.com/gen2brain/malgo"
 	"github.com/mjibson/go-dsp/dsputils"
@@ -399,6 +400,14 @@ func (conf *Config) configAudioDevices() {
 
 }
 
+// Start rigctld
+// TODO: This is temp, will be replaced with a proper rigctld wrapper
+func (conf *Config) startRigController() {
+	txControl.Init()
+	args := txControl.ParamsToArgs(txControl.Params{SerialPort: "/dev/cu.usbmodem22101", ModelId: "2052", ListenPort: "5454"})
+	go txControl.StartRigCtld(args)
+}
+
 func main() {
 	config := Config{}
 	config.HTTP_Listen_Addr = "0.0.0.0:3000"
@@ -413,6 +422,13 @@ func main() {
 	if !config.StdinDebug {
 		config.configAudioDevices()
 	}
+
+	// Start HTTP server
 	go config.serveHTTP()
+
+	// Start rigCtld
+	config.startRigController()
+
+	// Start tone decoder
 	config.toneDecoder()
 }

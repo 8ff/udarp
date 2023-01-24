@@ -1,9 +1,5 @@
 package txControl
 
-/*
-	./bin/rigctld-darwin-arm64 -m 2052 -r /dev/cu.usbmodem22101 -s 9600 -v -t 5454
-*/
-
 import (
 	"embed"
 	"fmt"

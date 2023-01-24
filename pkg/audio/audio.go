@@ -37,6 +37,7 @@ func GetDefaultCaptureDevice() (*malgo.DeviceInfo, error) {
 	return &captureDevices[0], nil
 }
 
+// GetAudioDevices returns a list of all playback and capture devices.
 func GetAudioDevices() ([]malgo.DeviceInfo, []malgo.DeviceInfo, error) {
 	var playbackDevices []malgo.DeviceInfo
 	var captureDevices []malgo.DeviceInfo
@@ -81,19 +82,39 @@ func DeviceFromHash(deviceHash string) (*malgo.DeviceInfo, error) {
 
 	// Go over all playback devices and find the one with the given ID
 	for _, device := range playbackDevices {
-		if misc.Md5HashString(device.Name()) == deviceHash {
+		if misc.Md5HashString(device.ID.String()) == deviceHash {
 			return &device, nil
 		}
 	}
 
 	// Go over all capture devices and find the one with the given ID
 	for _, device := range captureDevices {
-		if misc.Md5HashString(device.Name()) == deviceHash {
+		if misc.Md5HashString(device.ID.String()) == deviceHash {
 			return &device, nil
 		}
 	}
 
 	return nil, fmt.Errorf("device with hash %s not found", deviceHash)
+}
+
+func PrettyPrintDevices() {
+	playbackDevices, captureDevices, err := GetAudioDevices()
+	if err != nil {
+		misc.Log("error", fmt.Sprintf("Error getting audio devices: %s", err))
+		os.Exit(1)
+	}
+
+	// Print playback devices
+	fmt.Println("\x1b[32m**** Playback devices ****\x1b[0m")
+	for _, device := range playbackDevices {
+		fmt.Printf("ID: \x1b[32m%s\x1b[0m - Name: \x1b[32m%s\x1b[0m\n", misc.Md5HashString(device.ID.String()), device.Name())
+	}
+
+	// Print capture devices
+	fmt.Println("\n\x1b[31m**** Capture devices ****\x1b[0m")
+	for _, device := range captureDevices {
+		fmt.Printf("ID: \x1b[31m%s\x1b[0m - Name: \x1b[31m%s\x1b[0m\n", misc.Md5HashString(device.ID.String()), device.Name())
+	}
 }
 
 func PlayWave(deviceConfig malgo.DeviceConfig, buffer []byte) error {

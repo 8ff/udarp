@@ -43,7 +43,7 @@ type Config struct {
 	TimeSlotChannel chan map[float64][]float64
 }
 
-func (conf *Config) toneDecoder() {
+func (conf *Config) toneDecoder() error {
 	// 	//	// Get PCM data on stdin, processes it and pushes it on the channel
 	// 	// We expect audio to be S16_LE
 
@@ -77,8 +77,7 @@ func (conf *Config) toneDecoder() {
 	// Initialize the context.
 	ctx, err := malgo.InitContext(nil, malgo.ContextConfig{}, func(message string) {})
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 	defer func() {
 		_ = ctx.Uninit()
@@ -114,14 +113,15 @@ func (conf *Config) toneDecoder() {
 		// Initialize the device.
 		device, err := malgo.InitDevice(ctx.Context, deviceConfig, captureCallbacks)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			misc.Log("debug", fmt.Sprintf("Failed to initialize device: %s", err.Error()))
+			misc.Log("debug", fmt.Sprintf("DeviceConfig: %s", conf.CaptureDevice.ID.String()))
+
+			return err
 		}
 
 		err = device.Start()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
 	} else {
 		// If we are in debug mode, we read from STDIN
@@ -135,8 +135,7 @@ func (conf *Config) toneDecoder() {
 				break
 			}
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s.", err)
-				os.Exit(2)
+				return err
 			}
 			buffer.Write(stdinBuffer[:bytesRead])
 		}
@@ -340,34 +339,13 @@ func (conf *Config) parseFlags() bool {
 	for _, arg := range os.Args {
 		switch arg {
 		case "-l", "--list-devices", "--list":
-			listDevices()
+			audio.PrettyPrintDevices()
 			os.Exit(0)
 		case "--stdin":
 			conf.StdinDebug = true
 		}
 	}
 	return false
-}
-
-// Function that lists all audio devices by callign getDevices and prints an md5 hash of the deviceID
-func listDevices() {
-	playbackDevices, captureDevices, err := audio.GetAudioDevices()
-	if err != nil {
-		misc.Log("error", fmt.Sprintf("Error getting audio devices: %s", err))
-		os.Exit(1)
-	}
-
-	// Print playback devices
-	fmt.Println("\x1b[32m**** Playback devices ****\x1b[0m")
-	for _, device := range playbackDevices {
-		fmt.Printf("ID: \x1b[32m%s\x1b[0m - Name: \x1b[32m%s\x1b[0m\n", misc.Md5HashString(device.Name()), device.Name())
-	}
-
-	// Print capture devices
-	fmt.Println("\n\x1b[31m**** Capture devices ****\x1b[0m")
-	for _, device := range captureDevices {
-		fmt.Printf("ID: \x1b[31m%s\x1b[0m - Name: \x1b[31m%s\x1b[0m\n", misc.Md5HashString(device.Name()), device.Name())
-	}
 }
 
 // Function that gets AudioDevices from environment variables
@@ -430,5 +408,9 @@ func main() {
 	config.startRigController()
 
 	// Start tone decoder
-	config.toneDecoder()
+	err := config.toneDecoder()
+	if err != nil {
+		misc.Log("error", fmt.Sprintf("Tone decoder failed: %s", err))
+		os.Exit(1)
+	}
 }

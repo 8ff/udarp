@@ -7,6 +7,7 @@ require (
 	github.com/gen2brain/malgo v0.11.10
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/gorilla/websocket v1.5.0
+	github.com/joho/godotenv v1.4.0
 	github.com/klauspost/reedsolomon v1.11.3
 	github.com/mjibson/go-dsp v0.0.0-20180508042940-11479a337f12
 )

@@ -2,10 +2,10 @@
 ![logo](media/logo.svg)
 
 ## Usage
-### Decoding with test data<br>
+### Run
 ```bash
 cd cmd/udarp
-./scripts/testStdin.sh < samples/test.raw
+go run *.go config.env
 ```
 
 ### List audio devices
@@ -14,10 +14,10 @@ cd cmd/udarp
 go run *.go -l
 ```
 
-### Decode from audio device
-Replace PLAYBACK_DEVICE and CAPTURE_DEVICE with your device IDs from the list of audio devices
+### Decoding with test data<br>
 ```bash
-PLAYBACK_DEVICE=756435816c28459543a90b1bcfd5800a CAPTURE_DEVICE=d26717373e0a8e99f2d549435a7a1f7c go run main.go
+cd cmd/udarp
+./scripts/testStdin.sh < samples/test.raw
 ```
 
 ### RigCtl (Hamlib) https://github.com/Hamlib/Hamlib

@@ -16,6 +16,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/8ff/udarp/pkg/audio"
 	"github.com/8ff/udarp/pkg/buffer"
@@ -23,6 +24,7 @@ import (
 	"github.com/8ff/udarp/pkg/txControl"
 
 	"github.com/gen2brain/malgo"
+	"github.com/joho/godotenv"
 	"github.com/mjibson/go-dsp/dsputils"
 	"github.com/mjibson/go-dsp/fft"
 	"github.com/mjibson/go-dsp/window"
@@ -40,7 +42,11 @@ type Config struct {
 		Lo float64 // Low frequency filter
 		Hi float64 // High frequency filter
 	}
-	TimeSlotChannel chan map[float64][]float64
+	TimeSlotChannel  chan map[float64][]float64
+	RigCtlListenPort string
+	RigCtlSerialPort string
+	RigCtlBaudRate   string
+	RigCtlModelId    string
 }
 
 func (conf *Config) toneDecoder() error {
@@ -348,33 +354,156 @@ func (conf *Config) parseFlags() bool {
 	return false
 }
 
-// Function that gets AudioDevices from environment variables
-func (conf *Config) configAudioDevices() {
-	playbackHash := os.Getenv("PLAYBACK_DEVICE")
-	captureHash := os.Getenv("CAPTURE_DEVICE")
-
-	// Check if audio devices are set
-	if playbackHash == "" || captureHash == "" {
-		misc.Log("error", "Audio devices not set")
-		os.Exit(1)
-	}
-
+// Function that reads environment variables and sets config
+func (conf *Config) parseEnv() {
 	var err error
-	conf.PlaybackDevice, err = audio.DeviceFromHash(playbackHash)
+
+	// Check if first arg is a .env file, if so try to parse it below without erroring
+	if len(os.Args) > 1 {
+		if strings.HasSuffix(os.Args[1], ".env") {
+			err = godotenv.Load(os.Args[1])
+			if err != nil {
+				misc.Log("error", fmt.Sprintf("Error loading .env file: %s", err))
+			}
+		}
+	}
+
+	conf.HTTP_Listen_Addr = os.Getenv("UDARP_HTTP_LISTEN_ADDR")
+	if conf.HTTP_Listen_Addr == "" {
+		conf.HTTP_Listen_Addr = "127.0.0.1:3000"
+	}
+
+	// Read stdin debug flag
+	if os.Getenv("UDARP_STDIN_DEBUG") == "true" {
+		conf.StdinDebug = true
+	}
+
+	if !conf.StdinDebug {
+		// Check audio devices
+		playbackHash := os.Getenv("UDARP_PLAYBACK_DEVICE")
+		captureHash := os.Getenv("UDARP_CAPTURE_DEVICE")
+
+		// Check if audio devices are set
+		if playbackHash == "" || captureHash == "" {
+			misc.Log("error", "Audio devices not set. Please set UDARP_PLAYBACK_DEVICE and UDARP_CAPTURE_DEVICE environment variables using the -l flag to list devices.")
+			os.Exit(1)
+		}
+
+		if playbackHash == "default" {
+			conf.PlaybackDevice, err = audio.GetDefaultPlaybackDevice()
+			if err != nil {
+				misc.Log("error", fmt.Sprintf("Error getting default playback device: %s", err))
+				os.Exit(1)
+			}
+		} else {
+			conf.PlaybackDevice, err = audio.DeviceFromHash(playbackHash)
+			if err != nil {
+				misc.Log("error", fmt.Sprintf("Error getting playback device: %s", err))
+				os.Exit(1)
+			}
+		}
+
+		if captureHash == "default" {
+			conf.CaptureDevice, err = audio.GetDefaultCaptureDevice()
+			if err != nil {
+				misc.Log("error", fmt.Sprintf("Error getting default capture device: %s", err))
+				os.Exit(1)
+			}
+		} else {
+			conf.CaptureDevice, err = audio.DeviceFromHash(captureHash)
+			if err != nil {
+				misc.Log("error", fmt.Sprintf("Error getting capture device: %s", err))
+				os.Exit(1)
+			}
+		}
+
+		// Print device names
+		misc.Log("info", fmt.Sprintf("Using [%s - %s] as playback device", playbackHash, conf.PlaybackDevice.Name()))
+		misc.Log("info", fmt.Sprintf("Using [%s - %s] as capture device", captureHash, conf.CaptureDevice.Name()))
+	}
+
+	// Read window size
+	windowSize := os.Getenv("UDARP_WINDOW_SIZE")
+	if windowSize == "" {
+		windowSize = "1000"
+	}
+
+	conf.WindowSize, err = strconv.Atoi(windowSize)
 	if err != nil {
-		misc.Log("error", fmt.Sprintf("Error getting playback device: %s", err))
+		misc.Log("error", fmt.Sprintf("Error parsing window size: %s", err))
 		os.Exit(1)
 	}
 
-	conf.CaptureDevice, err = audio.DeviceFromHash(captureHash)
+	// Read windows in frame
+	windowsInFrame := os.Getenv("UDARP_WINDOWS_IN_FRAME")
+	if windowsInFrame == "" {
+		windowsInFrame = "10"
+	}
+
+	conf.WindowsInFrame, err = strconv.Atoi(windowsInFrame)
 	if err != nil {
-		misc.Log("error", fmt.Sprintf("Error getting capture device: %s", err))
+		misc.Log("error", fmt.Sprintf("Error parsing windows in frame: %s", err))
 		os.Exit(1)
 	}
 
-	// Print device names
-	misc.Log("info", fmt.Sprintf("Using [%s - %s] as playback device", playbackHash, conf.PlaybackDevice.Name()))
-	misc.Log("info", fmt.Sprintf("Using [%s - %s] as capture device", captureHash, conf.CaptureDevice.Name()))
+	// Read sample rate
+	sampleRate, err := strconv.Atoi(os.Getenv("UDARP_SAMPLE_RATE"))
+	if err != nil {
+		sampleRate = 44100
+	}
+	conf.SampleRate = uint32(sampleRate)
+
+	// Read HI frequency
+	conf.Freq.Hi, err = strconv.ParseFloat(os.Getenv("UDARP_FREQ_HI"), 64)
+	if err != nil {
+		conf.Freq.Hi = 2500
+	}
+
+	// Read LO frequency
+	conf.Freq.Lo, err = strconv.ParseFloat(os.Getenv("UDARP_FREQ_LO"), 64)
+	if err != nil {
+		conf.Freq.Lo = 0
+	}
+
+	// Read rigctld port
+	conf.RigCtlListenPort = os.Getenv("UDARP_RIGCTL_PORT")
+	if conf.RigCtlListenPort == "" {
+		conf.RigCtlListenPort = "4532"
+	}
+
+	// Read rigctld serial port
+	conf.RigCtlSerialPort = os.Getenv("UDARP_RIGCTL_SERIAL_PORT")
+	if conf.RigCtlSerialPort == "" {
+		conf.RigCtlSerialPort = "/dev/ttyUSB0"
+	}
+
+	// Read rigctld baud rate
+	conf.RigCtlBaudRate = os.Getenv("UDARP_RIGCTL_BAUD_RATE")
+	if conf.RigCtlBaudRate == "" {
+		conf.RigCtlBaudRate = "9600"
+	}
+
+	// Read rigctld model id
+	conf.RigCtlModelId = os.Getenv("UDARP_RIGCTL_MODEL_ID")
+	if conf.RigCtlModelId == "" {
+		conf.RigCtlModelId = "1"
+	}
+
+	// Print out all the configs
+	misc.Log("debug", "********* Config **********")
+	misc.Log("debug", fmt.Sprintf("HTTP listen addr: %s", conf.HTTP_Listen_Addr))
+	misc.Log("debug", fmt.Sprintf("Stdin debug: %t", conf.StdinDebug))
+	misc.Log("debug", fmt.Sprintf("Playback device: %s", conf.PlaybackDevice.Name()))
+	misc.Log("debug", fmt.Sprintf("Capture device: %s", conf.CaptureDevice.Name()))
+	misc.Log("debug", fmt.Sprintf("Window size: %d", conf.WindowSize))
+	misc.Log("debug", fmt.Sprintf("Windows in frame: %d", conf.WindowsInFrame))
+	misc.Log("debug", fmt.Sprintf("Sample rate: %d", conf.SampleRate))
+	misc.Log("debug", fmt.Sprintf("HI frequency: %f", conf.Freq.Hi))
+	misc.Log("debug", fmt.Sprintf("LO frequency: %f", conf.Freq.Lo))
+	misc.Log("debug", fmt.Sprintf("Rigctld port: %s", conf.RigCtlListenPort))
+	misc.Log("debug", fmt.Sprintf("Rigctld serial port: %s", conf.RigCtlSerialPort))
+	misc.Log("debug", fmt.Sprintf("Rigctld baud rate: %s", conf.RigCtlBaudRate))
+	misc.Log("debug", fmt.Sprintf("Rigctld model id: %s", conf.RigCtlModelId))
 
 }
 
@@ -388,18 +517,10 @@ func (conf *Config) startRigController() {
 
 func main() {
 	config := Config{}
-	config.HTTP_Listen_Addr = "0.0.0.0:3000"
-	config.Freq.Lo = 0
-	config.Freq.Hi = 2500
-	config.WindowSize = 1000
-	config.WindowsInFrame = 10
-	config.SampleRate = 44100
 	config.TimeSlotChannel = make(chan map[float64][]float64)
 	config.parseFlags()
+	config.parseEnv()
 	go config.fetchWindow()
-	if !config.StdinDebug {
-		config.configAudioDevices()
-	}
 
 	// Start HTTP server
 	go config.serveHTTP()

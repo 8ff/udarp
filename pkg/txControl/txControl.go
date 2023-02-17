@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net"
 	"os/exec"
 	"runtime"
@@ -15,8 +16,8 @@ import (
 //go:embed bin
 var rigctlBins embed.FS
 
-// Location of the temporary rigctl binary
-const rigctlBinPath = "/tmp/rigctld"
+// Location of the temporary rigctl binary - randomly generate name to avoid conflicts
+var rigctlBinPath = "/tmp/rigctld" + fmt.Sprintf("%x", rand.Intn(16777215))
 
 var killRigctlChan = make(chan bool)
 
@@ -26,6 +27,10 @@ type Params struct {
 	ModelId    string
 	ListenPort string
 	ListenAddr string
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
 // Function that converts Params to args for rigctl binary, skipping empty values
@@ -174,6 +179,11 @@ func Init() error {
 	}
 
 	return nil
+}
+
+func Cleanup() {
+	// Remove rigctl binary
+	exec.Command("rm", rigctlBinPath).Run()
 }
 
 /* Rigctl commands */

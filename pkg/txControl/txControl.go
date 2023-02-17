@@ -22,8 +22,10 @@ var killRigctlChan = make(chan bool)
 
 type Params struct {
 	SerialPort string
+	BaudRate   string
 	ModelId    string
 	ListenPort string
+	ListenAddr string
 }
 
 // Function that converts Params to args for rigctl binary, skipping empty values
@@ -40,6 +42,14 @@ func ParamsToArgs(p Params) []string {
 
 	if p.ListenPort != "" {
 		args = append(args, "-t", p.ListenPort)
+	}
+
+	if p.BaudRate != "" {
+		args = append(args, "-s", p.BaudRate)
+	}
+
+	if p.ListenAddr != "" {
+		args = append(args, "-T", p.ListenAddr)
 	}
 
 	return args
@@ -164,4 +174,21 @@ func Init() error {
 	}
 
 	return nil
+}
+
+/* Rigctl commands */
+func StartTX() string {
+	return "T 1"
+}
+
+func StopTX() string {
+	return "T 0"
+}
+
+func GetFrequency() string {
+	return "f"
+}
+
+func SetFrequency(freq string) string {
+	return fmt.Sprintf("F %s", freq)
 }

@@ -1,10 +1,11 @@
 package txControl
 
 import (
+	"crypto/rand"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"net"
 	"os/exec"
 	"runtime"
@@ -17,7 +18,7 @@ import (
 var rigctlBins embed.FS
 
 // Location of the temporary rigctl binary - randomly generate name to avoid conflicts
-var rigctlBinPath = "/tmp/rigctld" + fmt.Sprintf("%x", rand.Intn(16777215))
+var rigctlBinPath string
 
 var killRigctlChan = make(chan bool)
 
@@ -27,10 +28,6 @@ type Params struct {
 	ModelId    string
 	ListenPort string
 	ListenAddr string
-}
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
 }
 
 // Function that converts Params to args for rigctl binary, skipping empty values
@@ -168,7 +165,17 @@ func CheckRigCtld() error {
 }
 
 func Init() error {
-	err := fetchRigctldBinary()
+	// Randomly generate name for rigctl binary using secure random number generator
+	randomBytes := make([]byte, 16)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return err
+	}
+	rigctlBinPath = fmt.Sprintf("/tmp/rigctl-%s", hex.EncodeToString(randomBytes))
+
+	// Fetch rigctl binary
+
+	err = fetchRigctldBinary()
 	if err != nil {
 		return err
 	}
@@ -182,6 +189,8 @@ func Init() error {
 }
 
 func Cleanup() {
+	// Stop rigctl
+	StopRigCtld()
 	// Remove rigctl binary
 	exec.Command("rm", rigctlBinPath).Run()
 }

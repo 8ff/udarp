@@ -1,6 +1,8 @@
 # Universal Digital Radio Protocol written in Golang
 ![logo](media/logo.svg)
 
+`UDARP` is an advanced digital radio protocol that enables reliable HF communication in noisy environments. It flexibility offers a wide range of features, including messaging, control, BBS, SMS, email, and beacons, and is designed to work with low power transmitters. Whether you need to establish communication in remote areas or transmit data over long distances, UDARP provides a powerful and efficient solution.
+
 ## Usage
 ### Run
 ```bash

@@ -7,7 +7,14 @@ WebAssembly.instantiateStreaming(
   fetch("static/assets/main.wasm"),
   go.importObject
 ).then((result) => {
-  go.run(result.instance);
+  go.run(result.instance)
+    .then(() => {
+      console.log("Wasm app exited. Refreshing the page...");
+      location.reload();
+    })
+    .catch((err) => {
+      console.error("Error running Wasm app:", err);
+    });
   wasmInstance = result.instance;
 });
 

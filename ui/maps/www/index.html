@@ -5,8 +5,8 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Display a map</title>
-  <script src="https://cdn.maptiler.com/maplibre-gl-js/v2.4.0/maplibre-gl.js"></script>
-  <link href="https://cdn.maptiler.com/maplibre-gl-js/v2.4.0/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://www.unpkg.com/turf@2.0.0/turf.min.js" charset="utf-8"></script>
   <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
   <style>
@@ -41,14 +41,14 @@
   </svg>
   <!-- <div class="topBar"></div> -->
   <div class="nav">
-    <textarea id="filterQuery" class="filterQueryBox" autofocus name="filterQuery">BANDS: 40,20&#10;SENDER: ANY&#10;RECEIVER: ANY&#10;LIMIT: 100&#10;MODE: FT8, WSPR&#10;PAST_HOURS: 5</textarea>
+    <textarea id="filterQuery" class="filterQueryBox" autofocus name="filterQuery">BANDS: 40,20&#10;SENDER: ANY&#10;RECEIVER: ANY&#10;LIMIT: 500&#10;MODE: ANY&#10;PAST_HOURS: 5</textarea>
     <div id="queryButton" class="queryButton">Query</div>
     <div id="queryResponse" class="queryResponse">------------------</div>
     <div class="hintsBox">
       <div class="examplesComment">
         ==== Examples ====<br>
       </div> 
-      BANDS: 40,20,10M,70CM, 2MM<br>SENDER: &lt;MYCALL&gt;<br>RECEIVER: ANY<br>LIMIT:<br>MODE: ANY<br>PAST_HOURS: 24<br>REFRESH: YES</ve><br><br>
+      BANDS: 40,20,10M,70CM,2MM<br>SENDER: &lt;MYCALL&gt;<br>RECEIVER: ANY<br>LIMIT:<br>MODE: ANY<br>PAST_HOURS: 24<br>REFRESH: YES</ve><br><br>
       <div class="hintComment">
         ==== Defaults ====<br>
         </div>

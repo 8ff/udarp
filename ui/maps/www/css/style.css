@@ -10,6 +10,14 @@ body {
   font-family: "Avenir Next", "Avenir", sans-serif;
 }
 
+#map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    touch-action: none; /* This line is important for touch devices */
+  }
+
 .mapboxgl-popup-content {
     background-color: rgba(51, 57, 60, 0.644);
     color: rgb(238, 236, 236);

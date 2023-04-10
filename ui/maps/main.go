@@ -4,6 +4,10 @@ package main
 // TODO: Calculate distance between sender and receiver in report
 // TODO Show sender and receiver on map as different icon
 // TODO, remove console debug
+// TODO: Fix accepting CM or MM bands
+// TODO Fix favicon
+// TODO Fix mobile support
+// TODO Finish auto refresh
 
 import (
 	"bytes"
@@ -411,6 +415,8 @@ func frequencyToBand(frequency string) string {
 
 func serveGeoJSONApi() {
 	http.HandleFunc("/api/geojson/reports", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
 		// Read GET parameters
 		// Get band
 		bands := r.URL.Query().Get("BANDS")
@@ -461,7 +467,7 @@ func serveGeoJSONApi() {
 			// fmt.Printf("Band: %s Freq: %f Mode: %s Rec: %s Sen: %s ReportTime: %d, ReceiverLat: %f, ReceiverLon: %f, SenderLat: %f, SenderLon: %f\n", report.Band, report.Frequency, report.Mode, report.Receiver, report.Sender, report.ReportTime, report.ReceiverLat, report.ReceiverLon, report.SenderLat, report.SenderLon)
 
 			// Check if report is in band
-			if bands != "" {
+			if bands != "" && bands != "ANY" {
 				bands := strings.Split(bands, ",")
 				bandFound := false
 				for _, b := range bands {
@@ -907,7 +913,7 @@ func countRecords(db *badger.DB) (int, error) {
 
 func main() {
 	GlobalConfig = Config{
-		DBPath: "./db",
+		DBPath: "/tmp/uartdb",
 	}
 
 	var err error

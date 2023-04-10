@@ -83,11 +83,13 @@ func parseQueryText(text string) map[string]interface{} {
 		}
 
 		// Go over the values and remove any empty values
-		for i, value := range values {
-			if value == "" {
-				values = append(values[:i], values[i+1:]...)
+		nonEmptyValues := make([]string, 0, len(values))
+		for _, value := range values {
+			if value != "" {
+				nonEmptyValues = append(nonEmptyValues, value)
 			}
 		}
+		values = nonEmptyValues
 
 		// Convert []values to string
 		valuesString := strings.Join(values, ",")
@@ -336,6 +338,8 @@ func preloadLayers() {
 	createLayer("generic_layer", "genericMarkerIcon")
 	createLayer("own_layer", "ownMarkerIcon")
 }
+
+// Function that auto reruns the query
 
 func main() {
 	// TODO: Load some test query as demo

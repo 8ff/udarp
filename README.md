@@ -9,6 +9,7 @@ Introducing new, free maps service at [map.udarp.com](http://map.udarp.com)! Vis
 
 ## Join the UDARP Community 🎉
 We invite you to become a part of our growing community of developers, enthusiasts, and users who share a passion for UDARP. Connect with like-minded individuals, exchange ideas, discuss features, and contribute to the project's growth. To get started, join our vibrant community on [Slack](https://join.slack.com/t/udarp/shared_invite/zt-1sd4e2l39-R2pdafaylJ0uCc7wmhYioQ) and [Groups.io](https://groups.io/g/udarp/signup?u=8269483101481904438). By participating in these platforms, you'll gain access to valuable resources, receive support from fellow members, and stay updated on the latest news and announcements. Don't miss this opportunity to collaborate, learn, and help shape the future of UDARP!
+
 ### Slack
 https://join.slack.com/t/udarp/shared_invite/zt-1sd4e2l39-R2pdafaylJ0uCc7wmhYioQ
 
@@ -49,3 +50,6 @@ cd cmd/udarp
 
 ## Roadmap
 - [ ] Web UI
+
+## Issues
+If you encounter any issues, concerns, or simply wish to get in touch, we invite you to join our dedicated [Slack](https://join.slack.com/t/udarp/shared_invite/zt-1sd4e2l39-R2pdafaylJ0uCc7wmhYioQ) and [Groups.io](https://groups.io/g/udarp/signup?u=8269483101481904438) spaces.

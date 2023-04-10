@@ -1,76 +1,64 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-
-<meta charset="utf-8">
-
-<style>
-#map-container {
-    width: 100%;
-    height: 600px;
-}
-</style>
-
-<!-- TODO: Add the value of data-initial-token with a JWT
-dynamically generated on the server -->
-<script src="https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.core.js"
-    crossorigin async
-    data-callback="initMapKit"
-    data-libraries="map"
-    data-initial-token="{{.jwtToken}}"></script>
-<script type="module">
-/**
- * Wait for MapKit JS to be loaded by the script tag,
- * calls `mapkit.init` to set authorizationCallback with your JWT.
- */
-const setupMapKitJs = async() => {
-    if (!window.mapkit || window.mapkit.loadedLibraries.length === 0) {
-        // mapkit.core.js or the libraries are not loaded yet.
-        // Set up the callback and wait for it to be called.
-        await new Promise(resolve => { window.initMapKit = resolve });
-
-        // Clean up
-        delete window.initMapKit;
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display a map</title>
+  <script src="https://cdn.maptiler.com/maplibre-gl-js/v2.4.0/maplibre-gl.js"></script>
+  <link href="https://cdn.maptiler.com/maplibre-gl-js/v2.4.0/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://www.unpkg.com/turf@2.0.0/turf.min.js" charset="utf-8"></script>
+  <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
     }
-
-
-
-    mapkit.init({
-            authorizationCallback: function(done) {
-
-              fetch('/services/jwt')
-              .then(response => response.json())
-              .then(result => {
-                done(result.token)
-              })
-
-            }
-        });
-};
-
-/**
- * Script Entry Point
- */
-const main = async() => {
-    await setupMapKitJs();
-
-    const cupertino = new mapkit.CoordinateRegion(
-        new mapkit.Coordinate(37.3316850890998, -122.030067374026),
-        new mapkit.CoordinateSpan(0.167647972, 0.354985255)
-    );
-
-    // Create a map in the element whose ID is "map-container"
-    const map = new mapkit.Map("map-container", { isScrollEnabled:true, isZoomEnabled: true, showsZoomControl: true, colorScheme: mapkit.Map.ColorSchemes.Dark });
-        map.region = cupertino;
-        map._allowWheelToZoom = true;
-    };
-
-main();
-
-</script>
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+  </style>
 </head>
-
 <body>
-    <div id="map-container"></div>
+  <div id="map"></div>
+  <svg class="hb" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" stroke="#eee" stroke-width=".6" fill="rgba(0,0,0,0)" stroke-linecap="round" style="cursor: pointer">
+    <path d="M2,3L5,3L8,3M2,5L8,5M2,7L5,7L8,7">
+      <animate id="hamburgerButtonOpen" dur="0.2s" attributeName="d" values="M2,3L5,3L8,3M2,5L8,5M2,7L5,7L8,7;M3,3L5,5L7,3M5,5L5,5M3,7L5,5L7,7" fill="freeze" begin="start.begin" />
+      <animate id="hamburgerButtonClose" dur="0.2s" attributeName="d" values="M3,3L5,5L7,3M5,5L5,5M3,7L5,5L7,7;M2,3L5,3L8,3M2,5L8,5M2,7L5,7L8,7" fill="freeze" begin="reverse.begin" />
+    </path>
+    <rect width="10" height="10" stroke="none">
+      <animate id="a6cedbcb1a2" dur="2s" id="reverse" attributeName="width" />
+      <!-- <animate id="hamburgerButtonC" dur="2s" id="reverse" attributeName="width" begin="click" /> -->
+    </rect>
+    <rect width="10" height="10" stroke="none">
+      <animate id="5b639c1" dur="0.001s" id="start" attributeName="width" values="10;0" fill="freeze" />
+      <!-- <animate id="hamburgerButtonD" dur="0.001s" id="start" attributeName="width" values="10;0" fill="freeze" begin="click" /> -->
+      <animate id="7863f410" dur="0.001s" attributeName="width" values="0;10" fill="freeze" begin="reverse.begin" />
+    </rect>
+  </svg>
+  <!-- <div class="topBar"></div> -->
+  <div class="nav">
+    <label class="filterQueryBoxLabel" for="filterQuery">Query parameters</label>
+    <textarea id="filterQuery" class="filterQueryBox" autofocus name="filterQuery">BANDS: 40,20&#10;SENDER: ANY&#10;RECEIVER: ANY&#10;LIMIT: 100&#10;MODE: FT8, WSPR&#10;PAST_HOURS: 5</textarea>
+    <div id="queryButton" class="queryButton">Query</div>
+    <label class="queryResponseLabel" for="queryResponse">API Response</label>
+    <div id="queryResponse" class="queryResponse">------------------</div>
+    <label class="hintsBoxLabel" for="hintsBox">Examples</label>
+    <div class="hintsBox">BANDS: 40,20,10M,70CM, 2MM<br>SENDER: &lt;MYCALL&gt;<br>RECEIVER: ANY<br>LIMIT:<br>MODE: ANY<br>PAST_HOURS: 24<br>REFRESH: YES</ve><br><br>
+      <div class="hintComment">
+        ==== Defaults ====<br>
+        &gt; BAND_SUFFIXES:<br>&nbspNONE = M, M, CM, MM<br>
+        &gt; PAST_HOURS:<br>&nbspDEFAULT: 3 MAX: 24<br>
+        &gt; REFRESH:<br>&nbspDEFAULT: YES, EVERY 1 MIN<br><br>
+        * Leave blank for ANY *
+      </div>
+      </div>
+  </div>
+  <link href="static/css/style.css" rel="stylesheet" />
+  <script src="static/js/wasm_exec.js"></script>
+  <script src="static/js/main.js" charset="utf-8"></script>
 </body>
 </html>

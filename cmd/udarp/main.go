@@ -17,9 +17,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/8ff/udarp/pkg/audio"
 	"github.com/8ff/udarp/pkg/buffer"
+	"github.com/8ff/udarp/pkg/fskGenerator"
 	"github.com/8ff/udarp/pkg/misc"
 	"github.com/8ff/udarp/pkg/txControl"
 
@@ -42,11 +44,19 @@ type Config struct {
 		Lo float64 // Low frequency filter
 		Hi float64 // High frequency filter
 	}
-	TimeSlotChannel  chan map[float64][]float64
-	RigCtlListenPort string
-	RigCtlSerialPort string
-	RigCtlBaudRate   string
-	RigCtlModelId    string
+	TimeSlotChannel   chan map[float64][]float64
+	RigCtldListenAddr string
+	RigCtldListenPort string
+	RigCtldSerialPort string
+	RigCtldBaudRate   string
+	RigCtldModelId    string
+}
+
+type Tone struct {
+	SampleRate    int
+	BitDurationMS int
+	ToneFreq      float64
+	Bits          []int
 }
 
 func (conf *Config) toneDecoder() error {
@@ -465,28 +475,34 @@ func (conf *Config) parseEnv() {
 		conf.Freq.Lo = 0
 	}
 
+	// Read rigctld listen addr
+	conf.RigCtldListenAddr = os.Getenv("UDARP_RIGCTLD_ADDR")
+	if conf.RigCtldListenAddr == "" {
+		conf.RigCtldListenAddr = "127.0.0.1"
+	}
+
 	// Read rigctld port
-	conf.RigCtlListenPort = os.Getenv("UDARP_RIGCTL_PORT")
-	if conf.RigCtlListenPort == "" {
-		conf.RigCtlListenPort = "4532"
+	conf.RigCtldListenPort = os.Getenv("UDARP_RIGCTLD_PORT")
+	if conf.RigCtldListenPort == "" {
+		conf.RigCtldListenPort = "4532"
 	}
 
 	// Read rigctld serial port
-	conf.RigCtlSerialPort = os.Getenv("UDARP_RIGCTL_SERIAL_PORT")
-	if conf.RigCtlSerialPort == "" {
-		conf.RigCtlSerialPort = "/dev/ttyUSB0"
+	conf.RigCtldSerialPort = os.Getenv("UDARP_RIGCTLD_SERIAL_PORT")
+	if conf.RigCtldSerialPort == "" {
+		conf.RigCtldSerialPort = "/dev/ttyUSB0"
 	}
 
 	// Read rigctld baud rate
-	conf.RigCtlBaudRate = os.Getenv("UDARP_RIGCTL_BAUD_RATE")
-	if conf.RigCtlBaudRate == "" {
-		conf.RigCtlBaudRate = "9600"
+	conf.RigCtldBaudRate = os.Getenv("UDARP_RIGCTLD_BAUD_RATE")
+	if conf.RigCtldBaudRate == "" {
+		conf.RigCtldBaudRate = "9600"
 	}
 
 	// Read rigctld model id
-	conf.RigCtlModelId = os.Getenv("UDARP_RIGCTL_MODEL_ID")
-	if conf.RigCtlModelId == "" {
-		conf.RigCtlModelId = "1"
+	conf.RigCtldModelId = os.Getenv("UDARP_RIGCTLD_MODEL_ID")
+	if conf.RigCtldModelId == "" {
+		conf.RigCtldModelId = "1"
 	}
 
 	// Print out all the configs
@@ -500,10 +516,11 @@ func (conf *Config) parseEnv() {
 	misc.Log("debug", fmt.Sprintf("Sample rate: %d", conf.SampleRate))
 	misc.Log("debug", fmt.Sprintf("HI frequency: %f", conf.Freq.Hi))
 	misc.Log("debug", fmt.Sprintf("LO frequency: %f", conf.Freq.Lo))
-	misc.Log("debug", fmt.Sprintf("Rigctld port: %s", conf.RigCtlListenPort))
-	misc.Log("debug", fmt.Sprintf("Rigctld serial port: %s", conf.RigCtlSerialPort))
-	misc.Log("debug", fmt.Sprintf("Rigctld baud rate: %s", conf.RigCtlBaudRate))
-	misc.Log("debug", fmt.Sprintf("Rigctld model id: %s", conf.RigCtlModelId))
+	misc.Log("debug", fmt.Sprintf("Rigctld addr: %s", conf.RigCtldListenAddr))
+	misc.Log("debug", fmt.Sprintf("Rigctld port: %s", conf.RigCtldListenPort))
+	misc.Log("debug", fmt.Sprintf("Rigctld serial port: %s", conf.RigCtldSerialPort))
+	misc.Log("debug", fmt.Sprintf("Rigctld baud rate: %s", conf.RigCtldBaudRate))
+	misc.Log("debug", fmt.Sprintf("Rigctld model id: %s", conf.RigCtldModelId))
 
 }
 
@@ -511,8 +528,34 @@ func (conf *Config) parseEnv() {
 // TODO: This is temp, will be replaced with a proper rigctld wrapper
 func (conf *Config) startRigController() {
 	txControl.Init()
-	args := txControl.ParamsToArgs(txControl.Params{SerialPort: "/dev/cu.usbmodem22101", ModelId: "2052", ListenPort: "5454"})
-	go txControl.StartRigCtld(args)
+	args := txControl.ParamsToArgs(txControl.Params{SerialPort: conf.RigCtldSerialPort, ModelId: conf.RigCtldModelId, ListenAddr: conf.RigCtldListenAddr, ListenPort: conf.RigCtldListenPort, BaudRate: conf.RigCtldBaudRate})
+	// Print args
+	fmt.Println(args)
+	go func() {
+		err := txControl.StartRigCtld(args)
+		if err != nil {
+			misc.Log("error", fmt.Sprintf("Error starting rigctld: %s", err))
+			os.Exit(1)
+		}
+	}()
+}
+
+func (conf *Config) txData(tone Tone) error {
+	wave := fskGenerator.FlexFsk(tone.SampleRate, tone.BitDurationMS, tone.ToneFreq, tone.Bits)
+
+	deviceConfig := malgo.DefaultDeviceConfig(malgo.Playback)
+	deviceConfig.Playback.DeviceID = conf.PlaybackDevice.ID.Pointer()
+	deviceConfig.Playback.Format = malgo.FormatS16
+	deviceConfig.Playback.Channels = 1
+	deviceConfig.SampleRate = 44100
+	deviceConfig.Alsa.NoMMap = 1
+
+	err := audio.PlayWave(deviceConfig, wave)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func main() {
@@ -527,6 +570,14 @@ func main() {
 
 	// Start rigCtld
 	config.startRigController()
+	go func() {
+		// Wait for 5 seconds and transmit for 15 seconds, then stop transmitting
+		time.Sleep(5 * time.Second)
+		txControl.RigControlTcp(config.RigCtldListenAddr, config.RigCtldListenPort, "T 1")
+		config.txData(Tone{SampleRate: 44100, BitDurationMS: config.WindowSize, ToneFreq: 1500.00, Bits: []int{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}})
+		time.Sleep(15 * time.Second)
+		txControl.RigControlTcp(config.RigCtldListenAddr, config.RigCtldListenPort, "T 0")
+	}()
 
 	// Start tone decoder
 	err := config.toneDecoder()

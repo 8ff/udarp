@@ -32,7 +32,6 @@ cd cmd/udarp
 ### RigCtl (Hamlib) https://github.com/Hamlib/Hamlib
  Hamlibs' rigctld is used to control the radios PTT and frequency, and the binaries for it can be found in pkg/txControl/bin, which are embedded into the binary at compile time. UDARP automatically determines the OS and architecture and uses the correct binary to start rigctld.
 
-## Status for next release
 ## In progress:
 - [ ] Real life stress testing
 

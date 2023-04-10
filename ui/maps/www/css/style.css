@@ -62,14 +62,6 @@ body {
     display: block;
   }
 
-  .filterQueryBoxLabel {
-    position: relative;
-    top: 1%;
-    color: #ebe7db;
-    font-size: 0.9em;
-    margin-left: 5%;
-  }
-
   .filterQueryBox {
     position: relative;
     top: 1%;
@@ -127,14 +119,6 @@ body {
     background-color: #f3c44fa6;
 }
 
-.queryResponseLabel {
-    position: relative;
-    top: 6%;
-    color: #ebe7db;
-    font-size: 0.9em;
-    margin-left: 5%;
-  }
-
 .queryResponse {
     position: relative;
     top: 6%;
@@ -173,14 +157,6 @@ body {
     color: #d2f00b;
 }
 
-.hintsBoxLabel {
-    position: relative;
-    top: 7%;
-    color: #ebe7db;
-    font-size: 0.9em;
-    margin-left: 5%;
-  }
-
 .hintsBox {
     position: relative;
     top: 7%;
@@ -202,6 +178,14 @@ body {
     /* border-color: #cdcdcd;
     border-style: solid;
     border-width: 1px; */
+}
+
+.examplesComment {
+    /* position: absolute;
+    bottom: 5px; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .hintComment {

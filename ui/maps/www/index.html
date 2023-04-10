@@ -41,20 +41,21 @@
   </svg>
   <!-- <div class="topBar"></div> -->
   <div class="nav">
-    <label class="filterQueryBoxLabel" for="filterQuery">Query parameters</label>
     <textarea id="filterQuery" class="filterQueryBox" autofocus name="filterQuery">BANDS: 40,20&#10;SENDER: ANY&#10;RECEIVER: ANY&#10;LIMIT: 100&#10;MODE: FT8, WSPR&#10;PAST_HOURS: 5</textarea>
     <div id="queryButton" class="queryButton">Query</div>
-    <label class="queryResponseLabel" for="queryResponse">API Response</label>
     <div id="queryResponse" class="queryResponse">------------------</div>
-    <label class="hintsBoxLabel" for="hintsBox">Examples</label>
-    <div class="hintsBox">BANDS: 40,20,10M,70CM, 2MM<br>SENDER: &lt;MYCALL&gt;<br>RECEIVER: ANY<br>LIMIT:<br>MODE: ANY<br>PAST_HOURS: 24<br>REFRESH: YES</ve><br><br>
+    <div class="hintsBox">
+      <div class="examplesComment">
+        ==== Examples ====<br>
+      </div> 
+      BANDS: 40,20,10M,70CM, 2MM<br>SENDER: &lt;MYCALL&gt;<br>RECEIVER: ANY<br>LIMIT:<br>MODE: ANY<br>PAST_HOURS: 24<br>REFRESH: YES</ve><br><br>
       <div class="hintComment">
         ==== Defaults ====<br>
+        </div>
         &gt; BAND_SUFFIXES:<br>&nbspNONE = M, M, CM, MM<br>
         &gt; PAST_HOURS:<br>&nbspDEFAULT: 3 MAX: 24<br>
         &gt; REFRESH:<br>&nbspDEFAULT: YES, EVERY 1 MIN<br><br>
         * Leave blank for ANY *
-      </div>
       </div>
   </div>
   <link href="static/css/style.css" rel="stylesheet" />

@@ -30,36 +30,36 @@ function newMap() {
 
     // Generic marker icon
     let genericMarkerIcon = new Image(markerIconSize[0], markerIconSize[1]);
-    genericMarkerIcon.src = "static/assets/generic_marker.svg";
+    genericMarkerIcon.src = "static/assets/generic_marker.png";
     genericMarkerIcon.onload = () => tmpMap.addImage("genericMarkerIcon", genericMarkerIcon);
 
     // WSPR marker icon
     let wsprMarkerIcon = new Image(markerIconSize[0], markerIconSize[1]);
-    wsprMarkerIcon.src = "static/assets/wspr_marker.svg";
+    wsprMarkerIcon.src = "static/assets/wspr_marker.png";
     wsprMarkerIcon.onload = () => tmpMap.addImage("wsprMarkerIcon", wsprMarkerIcon);
     
     // FT8 marker icon
     let ft8MarkerIcon = new Image(markerIconSize[0], markerIconSize[1]);
-    ft8MarkerIcon.src = "static/assets/ft8_marker.svg";
+    ft8MarkerIcon.src = "static/assets/ft8_marker.png";
     ft8MarkerIcon.onload = () => tmpMap.addImage("ft8MarkerIcon", ft8MarkerIcon);
 
     let ft4MarkerIcon = new Image(markerIconSize[0], markerIconSize[1]);
-    ft4MarkerIcon.src = "static/assets/ft4_marker.svg";
+    ft4MarkerIcon.src = "static/assets/ft4_marker.png";
     ft4MarkerIcon.onload = () => tmpMap.addImage("ft4MarkerIcon", ft4MarkerIcon);
 
     // JT65 marker icon
     let jt65MarkerIcon = new Image(markerIconSize[0], markerIconSize[1]);
-    jt65MarkerIcon.src = "static/assets/jt65_marker.svg";
+    jt65MarkerIcon.src = "static/assets/jt65_marker.png";
     jt65MarkerIcon.onload = () => tmpMap.addImage("jt65MarkerIcon", jt65MarkerIcon);
 
     // UDARP marker icon
     let udarpMarkerIcon = new Image(markerIconSize[0], markerIconSize[1]);
-    udarpMarkerIcon.src = "static/assets/udarp_marker.svg";
+    udarpMarkerIcon.src = "static/assets/udarp_marker.png]";
     udarpMarkerIcon.onload = () => tmpMap.addImage("udarpMarkerIcon", udarpMarkerIcon);
 
     // Own marker icon
     let ownMarkerIcon = new Image(largeMarkerIconSize[0], largeMarkerIconSize[1]);
-    ownMarkerIcon.src = "static/assets/own_marker.svg";
+    ownMarkerIcon.src = "static/assets/own_marker.png";
     ownMarkerIcon.onload = () => tmpMap.addImage("ownMarkerIcon", ownMarkerIcon);
   
 

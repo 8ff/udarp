@@ -950,5 +950,5 @@ func main() {
 	serveStatic() // serveStatic()
 	serveIndex()
 	serveGeoJSONApi()
-	http.ListenAndServe(":8081", nil)
+	http.ListenAndServe(":80", nil)
 }

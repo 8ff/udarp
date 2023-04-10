@@ -9,6 +9,7 @@ import (
 )
 
 var queryInProcess = false
+var autoRefreshInterval = 0
 
 // parseQueryText parses the query text and returns a map of params
 func parseQueryText(text string) map[string]interface{} {
@@ -63,6 +64,21 @@ func parseQueryText(text string) map[string]interface{} {
 					value = "24"
 				}
 			}
+
+			// Check for auto refresh
+			if key == "REFRESH" {
+				// If value is numeric, more than 1 and less than 60 then set autoRefreshInterval
+				refreshInterval, err := strconv.Atoi(value)
+				if err != nil {
+					continue
+				}
+
+				if refreshInterval > 1 && refreshInterval < 60 {
+					autoRefreshInterval = refreshInterval
+				}
+
+			}
+
 			values[i] = value
 		}
 

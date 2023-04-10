@@ -4,7 +4,7 @@
 `UDARP` is an advanced digital radio protocol that enables reliable HF communication in noisy environments. Its flexibility offers a wide range of features, including messaging, control, BBS, SMS, email, and beacons, and is designed to work with low power transmitters. Whether you need to establish communication in remote areas or transmit data over long distances, UDARP provides a powerful and efficient solution.
 
 ## Announcing the New Maps Service: [map.udarp.com](http://map.udarp.com) 🎉 🥳 🍾
-We are excited to announce the launch of our brand new maps service at [map.udarp.com](http://map.udarp.com)! This powerful, user-friendly tool allows you to visualize UDARP, WSPR, FT4/8, VARAC and other beacon transmissions on a map, completely free of charge. By providing a comprehensive and interactive view of the propagation patterns, our maps service enables users to gain a deeper understanding of the radio spectrum and track the performance of their own signals. Whether you are an amateur radio operator, a professional, or simply curious about the world of radio communications, map.udarp.com is the perfect resource for exploring and analyzing signal data in a visually engaging way. Visit [map.udarp.com](http://map.udarp.com) today and discover the fascinating world of radio beacons on our interactive maps!
+Introducing new, free maps service at [map.udarp.com](http://map.udarp.com)! Visualize UDARP, WSPR, FT4/8, VARAC, JT65 and other transmissions for a deeper understanding of radio spectrum and signal performance tracking. Ideal for amateurs, professionals, or radio enthusiasts, explore signal data through interactive maps at [map.udarp.com](http://map.udarp.com)!
 ![map](media/map_demo.png)
 
 ## Join the UDARP Community 🎉

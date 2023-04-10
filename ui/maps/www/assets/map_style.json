@@ -15,7 +15,7 @@
       "maxzoom": 6,
       "tileSize": 256,
       "tiles": [
-        "http://tileserverudarp.b-cdn.net/tiles/natural_earth_raster/{z}/{x}/{y}"
+        "https://tileserverudarp.b-cdn.net/tiles/natural_earth_raster/{z}/{x}/{y}"
       ],
       "type": "raster"
     },

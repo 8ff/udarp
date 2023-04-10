@@ -54,7 +54,7 @@ function newMap() {
 
     // UDARP marker icon
     let udarpMarkerIcon = new Image(markerIconSize[0], markerIconSize[1]);
-    udarpMarkerIcon.src = "static/assets/udarp_marker.png]";
+    udarpMarkerIcon.src = "static/assets/udarp_marker.png";
     udarpMarkerIcon.onload = () => tmpMap.addImage("udarpMarkerIcon", udarpMarkerIcon);
 
     // Own marker icon

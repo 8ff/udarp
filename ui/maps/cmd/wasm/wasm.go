@@ -76,7 +76,7 @@ func parseQueryText(text string) map[string]interface{} {
 				}
 
 				if refreshInterval > 0 && refreshInterval < 60 {
-					fmt.Printf("Setting auto refresh interval to %d minutes\n", refreshInterval)
+					// fmt.Printf("Setting auto refresh interval to %d minutes\n", refreshInterval)
 					autoRefreshInterval = refreshInterval
 				}
 
@@ -216,7 +216,7 @@ func pushQuery() {
 
 	// Call parseQueryText() to get params
 	params := parseQueryText(text)
-	fmt.Println("PARAMS:", params)
+	// fmt.Println("PARAMS:", params)
 
 	// Do a get request ourselves and pass data to loadByQuery
 	// Convert params to map[string]string
@@ -286,7 +286,7 @@ func pushQuery() {
 			// Convert feature.properties.mode to string
 			featureString := fmt.Sprintf("%v", feature.(map[string]interface{})["properties"].(map[string]interface{})["mode"])
 
-			fmt.Printf("FEATURE: %v\n", featureString)
+			// fmt.Printf("FEATURE: %v\n", featureString)
 
 			switch featureString {
 			case "FT8":

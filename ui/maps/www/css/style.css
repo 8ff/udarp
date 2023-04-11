@@ -10,14 +10,6 @@ body {
   font-family: "Avenir Next", "Avenir", sans-serif;
 }
 
-#map {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 100%;
-    touch-action: none; /* This line is important for touch devices */
-  }
-
 .mapboxgl-popup-content {
     background-color: rgba(51, 57, 60, 0.644);
     color: rgb(238, 236, 236);
@@ -202,4 +194,28 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.questionsBox {
+    text-decoration: none;
+    position: relative;
+    top: 9%;
+    width: 90%;
+    /* height: 150px; */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: auto;
+    /* background-color: #111010; */
+    opacity: 0.5;
+    color: #11ffd1;
+    letter-spacing: 1px;
+    border-radius: 5px;
+    padding: 5px;
+    /* padding-bottom: 50px; */
+    text-align: left;
+    font-family: monospace;
+    /* border-color: #cdcdcd;
+    border-style: solid;
+    border-width: 1px; */
 }

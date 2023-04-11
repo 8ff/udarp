@@ -41,21 +41,23 @@ type Config struct {
 var GlobalConfig Config
 
 type Report struct {
-	Band        string   `json:"band"`
-	Frequency   float64  `json:"frequency"`
-	Mode        string   `json:"mode"`
-	Receiver    string   `json:"receiver"`
-	Sender      string   `json:"sender"`
-	ReportTime  int64    `json:"report_time"`
-	SNR         int      `json:"snr"`
-	ReceiverLon float64  `json:"receiver_lon"`
-	ReceiverLat float64  `json:"receiver_lat"`
-	SenderLon   float64  `json:"sender_lon"`
-	SenderLat   float64  `json:"sender_lat"`
-	Power       int      `json:"power"`
-	Drift       int      `json:"drift"`
-	Tags        []string `json:"tags"`
-	Distance    float64  `json:"distance"`
+	Band            string   `json:"band"`
+	Frequency       float64  `json:"frequency"`
+	Mode            string   `json:"mode"`
+	Receiver        string   `json:"receiver"`
+	Sender          string   `json:"sender"`
+	ReportTime      int64    `json:"report_time"`
+	SNR             int      `json:"snr"`
+	ReceiverLon     float64  `json:"receiver_lon"`
+	ReceiverLat     float64  `json:"receiver_lat"`
+	ReceiverLocator string   `json:"receiver_locator"`
+	SenderLon       float64  `json:"sender_lon"`
+	SenderLat       float64  `json:"sender_lat"`
+	SenderLocator   string   `json:"sender_locator"`
+	Power           int      `json:"power"`
+	Drift           int      `json:"drift"`
+	Tags            []string `json:"tags"`
+	Distance        float64  `json:"distance"`
 }
 
 var CurrentReports []Report
@@ -413,6 +415,11 @@ func frequencyToBand(frequency string) string {
 	return ""
 }
 
+// Function that takes a string and string color and returns <span style=\"color: color;\">string</span>
+func colorizeString(s string, color string) string {
+	return fmt.Sprintf("<span style=\"color: %s;\">%s</span>", color, s)
+}
+
 func serveGeoJSONApi() {
 	http.HandleFunc("/api/geojson/reports", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -517,32 +524,35 @@ func serveGeoJSONApi() {
 				continue
 			}
 
+			// If no sender/receiver is specified, show all reports
 			if (sender == "ANY" || sender == "") && (receiver == "ANY" || receiver == "") {
-				feature := packGeoJSONFeature(GeoJSONInput{Mode: report.Mode, Description: fmt.Sprintf("<b>%s</b><br>%s  %s  %d", report.Receiver, report.Band, report.Mode, report.SNR), Lat: report.ReceiverLat, Lon: report.ReceiverLon})
+				feature := packGeoJSONFeature(GeoJSONInput{Mode: report.Mode, Description: fmt.Sprintf("<b>%s@%s<br>%s  %s  %s</b>", colorizeString(report.Receiver, "#ff5520"), colorizeString(report.ReceiverLocator, "#ffb500"), colorizeString(report.Band, "#4fff71"), colorizeString(report.Mode, "#00ffff"), colorizeString(fmt.Sprintf("%d", report.SNR), "#ff36d0")), Lat: report.ReceiverLat, Lon: report.ReceiverLon})
 				features = append(features, feature)
 			} else {
 				// Satisfy OWN layer, find 1 report that has
 				if !gotSelfMarker {
 					// Find which sender or receiver is not empty or set to any
+					// Set description for own marker
 					if report.Sender != "" && report.Sender != "ANY" {
-						feature := packGeoJSONFeature(GeoJSONInput{Mode: "OWN", Description: fmt.Sprintf("<b>%s</b>", report.Sender), Lat: report.SenderLat, Lon: report.SenderLon})
+						feature := packGeoJSONFeature(GeoJSONInput{Mode: "OWN", Description: fmt.Sprintf("<b>%s</b>", colorizeString(report.Sender, "#3fffb5")), Lat: report.SenderLat, Lon: report.SenderLon})
 						features = append(features, feature)
 						gotSelfMarker = true
 					} else if report.Receiver != "" && report.Receiver != "ANY" {
-						feature := packGeoJSONFeature(GeoJSONInput{Mode: "OWN", Description: fmt.Sprintf("<b>%s</b>", report.Receiver), Lat: report.ReceiverLat, Lon: report.ReceiverLon})
+						feature := packGeoJSONFeature(GeoJSONInput{Mode: "OWN", Description: fmt.Sprintf("<b>%s</b>", colorizeString(report.Receiver, "#3fffb5")), Lat: report.ReceiverLat, Lon: report.ReceiverLon})
 						features = append(features, feature)
 						gotSelfMarker = true
 					}
 				}
-				feature := packGeoJSONFeature(GeoJSONInput{Mode: report.Mode, Description: fmt.Sprintf("<b>%s - %.1fkm</b><br>%s  %s  %d", report.Receiver, report.Distance, report.Band, report.Mode, report.SNR), Lat: report.ReceiverLat, Lon: report.ReceiverLon})
+				// Set description for report marker
+				feature := packGeoJSONFeature(GeoJSONInput{Mode: report.Mode, Description: fmt.Sprintf("<b>%s@%s<br>%skm %s %s %s</b>", colorizeString(report.Receiver, "#ff5520"), colorizeString(report.ReceiverLocator, "#ffb500"), colorizeString(fmt.Sprintf("%.0f", report.Distance), "#ff7d00"), colorizeString(report.Band, "#4fff71"), colorizeString(report.Mode, "#00ffff"), colorizeString(fmt.Sprintf("%d", report.SNR), "#ff36d0")), Lat: report.ReceiverLat, Lon: report.ReceiverLon})
 				features = append(features, feature)
 			}
 		}
 
 		// Print all returned features
-		for _, feature := range features {
-			fmt.Printf("Feature: %s %f %f %s %s\n", feature.Type, feature.Geometry.Coordinates[0], feature.Geometry.Coordinates[1], feature.Properties.Mode, feature.Properties.Description)
-		}
+		// for _, feature := range features {
+		// 	fmt.Printf("Feature: %s %f %f %s %s\n", feature.Type, feature.Geometry.Coordinates[0], feature.Geometry.Coordinates[1], feature.Properties.Mode, feature.Properties.Description)
+		// }
 
 		// Print how many features we have
 		fmt.Printf("Returning results: %d\n", len(features))
@@ -654,6 +664,8 @@ func ProcessWSPRReports(reportChan chan Report, query string) error {
 			continue
 		}
 
+		wsprEntry.ReceiverLocator = strings.Trim(tokens[6], "\"")
+
 		wsprEntry.Sender = strings.Trim(tokens[7], "\"")
 		wsprEntry.SenderLat, e = strconv.ParseFloat(tokens[8], 64)
 		if e != nil {
@@ -666,6 +678,8 @@ func ProcessWSPRReports(reportChan chan Report, query string) error {
 			fmt.Printf("unable to parse tx_lon: %s\n", tokens[19])
 			continue
 		}
+
+		wsprEntry.SenderLocator = strings.Trim(tokens[10], "\"")
 
 		wsprEntry.Frequency, e = strconv.ParseFloat(tokens[14], 64)
 		if e != nil {
@@ -767,21 +781,23 @@ func ProcessPSKReporterReports(reportChan chan Report) error {
 		}
 
 		report := Report{
-			Band:        frequencyToBand(report.Frequency),
-			Frequency:   parseFloat64(report.Frequency),
-			Mode:        report.Mode,
-			Receiver:    report.ReceiverCallsign,
-			Sender:      report.SenderCallsign,
-			ReportTime:  parseInt64(report.FlowStartSeconds),
-			SNR:         parseInt(report.SNR),
-			ReceiverLon: receiverLon,
-			ReceiverLat: receiverLat,
-			SenderLon:   senderLon,
-			SenderLat:   senderLat,
-			Power:       0, // Power is not provided in the ReceptionReports struct
-			Drift:       0, // Drift is not provided in the ReceptionReports struct
-			Tags:        []string{},
-			Distance:    calculateDistance(senderLat, senderLon, receiverLat, receiverLon),
+			Band:            frequencyToBand(report.Frequency),
+			Frequency:       parseFloat64(report.Frequency),
+			Mode:            report.Mode,
+			Receiver:        report.ReceiverCallsign,
+			Sender:          report.SenderCallsign,
+			ReportTime:      parseInt64(report.FlowStartSeconds),
+			SNR:             parseInt(report.SNR),
+			ReceiverLon:     receiverLon,
+			ReceiverLat:     receiverLat,
+			ReceiverLocator: report.ReceiverLocator,
+			SenderLon:       senderLon,
+			SenderLat:       senderLat,
+			SenderLocator:   report.SenderLocator,
+			Power:           0, // Power is not provided in the ReceptionReports struct
+			Drift:           0, // Drift is not provided in the ReceptionReports struct
+			Tags:            []string{},
+			Distance:        calculateDistance(senderLat, senderLon, receiverLat, receiverLon),
 		}
 
 		if !checkReportHash(report) {

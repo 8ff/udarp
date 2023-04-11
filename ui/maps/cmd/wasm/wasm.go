@@ -6,10 +6,12 @@ import (
 	"strconv"
 	"strings"
 	"syscall/js"
+	"time"
 )
 
 var queryInProcess = false
 var autoRefreshInterval = 0
+var minutesSinceLastRefresh = 0
 
 // parseQueryText parses the query text and returns a map of params
 func parseQueryText(text string) map[string]interface{} {
@@ -73,7 +75,8 @@ func parseQueryText(text string) map[string]interface{} {
 					continue
 				}
 
-				if refreshInterval > 1 && refreshInterval < 60 {
+				if refreshInterval > 0 && refreshInterval < 60 {
+					fmt.Printf("Setting auto refresh interval to %d minutes\n", refreshInterval)
 					autoRefreshInterval = refreshInterval
 				}
 
@@ -118,45 +121,52 @@ func parseQueryText(text string) map[string]interface{} {
 	return params
 }
 
+/// NOT USED ?
+// func handleQuerySubmit() {
+// 	doc := js.Global().Get("document")
+
+// 	// Call js function removeMap()
+// 	removeMap := js.Global().Get("removeMap")
+// 	removeMap.Invoke()
+
+// 	// Call js function newMap()
+// 	newMap := js.Global().Get("newMap")
+// 	mapq := newMap.Invoke()
+
+// 	// Run js function once() on mapq
+// 	mapq.Call("once", "load", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+// 		// fmt.Println("MAP_LOADED: RUNNING QUERY")
+
+// 		// Load text by id from filterQuery
+// 		filterQuery := doc.Call("getElementById", "filterQuery")
+// 		text := filterQuery.Get("value").String()
+
+// 		// Call parseQueryText() to get params
+// 		params := parseQueryText(text)
+// 		fmt.Println("PARAMS:", params)
+
+// 		// Run loadByQuery and pass "api/geojson/reports" url and params
+
+// 		loadByQuery := js.Global().Get("loadByQuery")
+// 		loadByQuery.Invoke("api/geojson/reports", params)
+// 		// loadByQuery.Invoke("api/geojson/reports", map[string]interface{}{
+// 		// 	"bands": "10,20",
+// 		// 	"limit": 100,
+// 		// })
+// 		return nil
+// 	}))
+// }
+
 // setQueryButton listens for a click on the queryButton and reloads the map
-func setQueryButton() {
-	doc := js.Global().Get("document")
-	element := doc.Call("getElementById", "queryButton")
-	element.Call("addEventListener", "click", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		// Call js function removeMap()
-		removeMap := js.Global().Get("removeMap")
-		removeMap.Invoke()
-
-		// Call js function newMap()
-		newMap := js.Global().Get("newMap")
-		mapq := newMap.Invoke()
-
-		// Run js function once() on mapq
-		mapq.Call("once", "load", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-			// fmt.Println("MAP_LOADED: RUNNING QUERY")
-
-			// Load text by id from filterQuery
-			filterQuery := doc.Call("getElementById", "filterQuery")
-			text := filterQuery.Get("value").String()
-
-			// Call parseQueryText() to get params
-			params := parseQueryText(text)
-			fmt.Println("PARAMS:", params)
-
-			// Run loadByQuery and pass "api/geojson/reports" url and params
-
-			loadByQuery := js.Global().Get("loadByQuery")
-			loadByQuery.Invoke("api/geojson/reports", params)
-			// loadByQuery.Invoke("api/geojson/reports", map[string]interface{}{
-			// 	"bands": "10,20",
-			// 	"limit": 100,
-			// })
-			return nil
-		}))
-
-		return nil
-	}))
-}
+//// NOT USED ?
+// func setQueryButton() {
+// 	doc := js.Global().Get("document")
+// 	element := doc.Call("getElementById", "queryButton")
+// 	element.Call("addEventListener", "click", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+// 		handleQuerySubmit()
+// 		return nil
+// 	}))
+// }
 
 // Show error
 func showError(msg string) {
@@ -194,133 +204,140 @@ func removeLayer(layerName string) {
 	removeLayer.Invoke(layerName)
 }
 
+func pushQuery() {
+	doc := js.Global().Get("document")
+	queryInProcess = true
+
+	showInfo("Querying server...")
+
+	// Load text by id from filterQuery
+	filterQuery := doc.Call("getElementById", "filterQuery")
+	text := filterQuery.Get("value").String()
+
+	// Call parseQueryText() to get params
+	params := parseQueryText(text)
+	fmt.Println("PARAMS:", params)
+
+	// Do a get request ourselves and pass data to loadByQuery
+	// Convert params to map[string]string
+	paramsString := make(map[string]string)
+	for key, value := range params {
+		paramsString[key] = value.(string)
+	}
+	// Do a get request
+	go func() {
+		// fmt.Println("PARAMSQ:", paramsString)
+		res, err := getData("api/geojson/reports", paramsString)
+		if err != nil {
+			showError("Unable to query server: " + err.Error())
+			queryInProcess = false
+			return
+		}
+		// fmt.Println("RESPONSE:", res)
+
+		// Parse res as json
+		var data map[string]interface{}
+		err = json.Unmarshal([]byte(res), &data)
+		if err != nil {
+			// TODO: check server response
+			showError("Unable to parse server response: " + err.Error())
+			queryInProcess = false
+			return
+		}
+		// fmt.Println("DATA:", data)
+
+		// Check if "features" is empty
+		if len(data["features"].([]interface{})) == 0 {
+			// Print error to .queryResponse
+			showError("No results found")
+			// TODO: Clear layers
+
+			queryInProcess = false
+			return
+		}
+
+		// Check if map is loaded by using map.Loaded()
+		loaded := js.Global().Get("map").Call("loaded")
+		if !loaded.Bool() {
+			// Print error to .queryResponse
+			showError("Map not loaded")
+			queryInProcess = false
+			return
+		}
+
+		// We need to go over all features which are in GeoJSON format and set corresponding modes to correct layer
+		// ft8_layer, wspr_layer, udarp_layer, generic_layer
+		// MODES: FT8/FT4, WSPR, UDARP, everything else is GENERIC
+		// As we go over each feature, instead of parsing we can stringify it and use strings.Contains() to check if it contains "FT8" or "WSPR" or "UDARP"
+		// If it contains "FT8" then we add it to ft8_layer
+		// If it contains "WSPR" then we add it to wspr_layer
+		// If it contains "UDARP" then we add it to udarp_layer
+		// If it contains none of these then we add it to generic_layer
+
+		layerFeatures := make(map[string][]interface{})
+		for _, layerName := range []string{"ft8_layer", "ft4_layer", "wspr_layer", "udarp_layer", "generic_layer", "own_layer"} {
+			layerFeatures[layerName] = []interface{}{}
+		}
+
+		// Modify this loop to collect features for each layer
+		features := data["features"].([]interface{})
+		for _, feature := range features {
+			var layerName string
+			// Convert feature.properties.mode to string
+			featureString := fmt.Sprintf("%v", feature.(map[string]interface{})["properties"].(map[string]interface{})["mode"])
+
+			fmt.Printf("FEATURE: %v\n", featureString)
+
+			switch featureString {
+			case "FT8":
+				layerName = "ft8_layer"
+			case "FT4":
+				layerName = "ft4_layer"
+			case "WSPR":
+				layerName = "wspr_layer"
+			case "UDARP":
+				layerName = "udarp_layer"
+			case "OWN":
+				layerName = "own_layer"
+			default:
+				layerName = "generic_layer"
+			}
+
+			layerFeatures[layerName] = append(layerFeatures[layerName], feature)
+		}
+
+		// Set the data for each layer after the loop
+		for layerName, features := range layerFeatures {
+			source := js.Global().Get("map").Call("getSource", layerName)
+			featureCollection := map[string]interface{}{
+				"type":     "FeatureCollection",
+				"features": features,
+			}
+			jsonData, err := json.Marshal(featureCollection)
+			if err != nil {
+				showError("Unable to marshal feature collection: " + err.Error())
+				queryInProcess = false
+				return
+			}
+			source.Call("setData", js.Global().Get("JSON").Call("parse", string(jsonData)))
+		}
+
+		showSuccess("Query successful")
+		queryInProcess = false
+	}()
+}
+
 func runQuery() {
 	doc := js.Global().Get("document")
 	element := doc.Call("getElementById", "queryButton")
 	element.Call("addEventListener", "click", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+
 		if queryInProcess {
-			showError("Query in process, please wait...")
+			showError("Query in process")
 			return nil
 		}
-		queryInProcess = true
 
-		showInfo("Querying server...")
-
-		// Load text by id from filterQuery
-		filterQuery := doc.Call("getElementById", "filterQuery")
-		text := filterQuery.Get("value").String()
-
-		// Call parseQueryText() to get params
-		params := parseQueryText(text)
-		fmt.Println("PARAMS:", params)
-
-		// Do a get request ourselves and pass data to loadByQuery
-		// Convert params to map[string]string
-		paramsString := make(map[string]string)
-		for key, value := range params {
-			paramsString[key] = value.(string)
-		}
-		// Do a get request
-		go func() {
-			// fmt.Println("PARAMSQ:", paramsString)
-			res, err := getData("api/geojson/reports", paramsString)
-			if err != nil {
-				showError("Unable to query server: " + err.Error())
-				queryInProcess = false
-				return
-			}
-			// fmt.Println("RESPONSE:", res)
-
-			// Parse res as json
-			var data map[string]interface{}
-			err = json.Unmarshal([]byte(res), &data)
-			if err != nil {
-				// TODO: check server response
-				showError("Unable to parse server response: " + err.Error())
-				queryInProcess = false
-				return
-			}
-			// fmt.Println("DATA:", data)
-
-			// Check if "features" is empty
-			if len(data["features"].([]interface{})) == 0 {
-				// Print error to .queryResponse
-				showError("No results found")
-				// TODO: Clear layers
-
-				queryInProcess = false
-				return
-			}
-
-			// Check if map is loaded by using map.Loaded()
-			loaded := js.Global().Get("map").Call("loaded")
-			if !loaded.Bool() {
-				// Print error to .queryResponse
-				showError("Map not loaded")
-				queryInProcess = false
-				return
-			}
-
-			// We need to go over all features which are in GeoJSON format and set corresponding modes to correct layer
-			// ft8_layer, wspr_layer, udarp_layer, generic_layer
-			// MODES: FT8/FT4, WSPR, UDARP, everything else is GENERIC
-			// As we go over each feature, instead of parsing we can stringify it and use strings.Contains() to check if it contains "FT8" or "WSPR" or "UDARP"
-			// If it contains "FT8" then we add it to ft8_layer
-			// If it contains "WSPR" then we add it to wspr_layer
-			// If it contains "UDARP" then we add it to udarp_layer
-			// If it contains none of these then we add it to generic_layer
-
-			layerFeatures := make(map[string][]interface{})
-			for _, layerName := range []string{"ft8_layer", "ft4_layer", "wspr_layer", "udarp_layer", "generic_layer", "own_layer"} {
-				layerFeatures[layerName] = []interface{}{}
-			}
-
-			// Modify this loop to collect features for each layer
-			features := data["features"].([]interface{})
-			for _, feature := range features {
-				var layerName string
-				// Convert feature.properties.mode to string
-				featureString := fmt.Sprintf("%v", feature.(map[string]interface{})["properties"].(map[string]interface{})["mode"])
-
-				fmt.Printf("FEATURE: %v\n", featureString)
-
-				switch featureString {
-				case "FT8":
-					layerName = "ft8_layer"
-				case "FT4":
-					layerName = "ft4_layer"
-				case "WSPR":
-					layerName = "wspr_layer"
-				case "UDARP":
-					layerName = "udarp_layer"
-				case "OWN":
-					layerName = "own_layer"
-				default:
-					layerName = "generic_layer"
-				}
-
-				layerFeatures[layerName] = append(layerFeatures[layerName], feature)
-			}
-
-			// Set the data for each layer after the loop
-			for layerName, features := range layerFeatures {
-				source := js.Global().Get("map").Call("getSource", layerName)
-				featureCollection := map[string]interface{}{
-					"type":     "FeatureCollection",
-					"features": features,
-				}
-				jsonData, err := json.Marshal(featureCollection)
-				if err != nil {
-					showError("Unable to marshal feature collection: " + err.Error())
-					queryInProcess = false
-					return
-				}
-				source.Call("setData", js.Global().Get("JSON").Call("parse", string(jsonData)))
-			}
-
-			showSuccess("Query successful")
-			queryInProcess = false
-		}()
+		pushQuery()
 		return nil
 	}))
 
@@ -340,6 +357,25 @@ func preloadLayers() {
 }
 
 // Function that auto reruns the query
+// It runs every 1 minute and checks how many minutes since last refresh, if equal or more than autoRefreshInterval then it runs the query
+func refreshRunner() {
+	// Create a ticker
+	ticker := time.NewTicker(1 * time.Minute)
+	for {
+		<-ticker.C
+
+		if autoRefreshInterval == 0 {
+			continue
+		}
+
+		if minutesSinceLastRefresh >= autoRefreshInterval {
+			pushQuery()
+			minutesSinceLastRefresh = 0
+		}
+
+		minutesSinceLastRefresh++
+	}
+}
 
 func main() {
 	// TODO: Load some test query as demo
@@ -348,6 +384,8 @@ func main() {
 	// createLayer("places", "ft8MarkerIcon")
 	// createLayer("places", "wsprMarkerIcon")
 	preloadLayers()
+
+	go refreshRunner()
 
 	// Listen for a click on queryButton and reload map
 	// go setQueryButton()

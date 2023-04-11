@@ -574,6 +574,7 @@ func main() {
 		// Wait for 5 seconds and transmit for 15 seconds, then stop transmitting
 		time.Sleep(5 * time.Second)
 		txControl.RigControlTcp(config.RigCtldListenAddr, config.RigCtldListenPort, "T 1")
+		misc.Log("debug", "Transmitting")
 		config.txData(Tone{SampleRate: 44100, BitDurationMS: config.WindowSize, ToneFreq: 1500.00, Bits: []int{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}})
 		time.Sleep(15 * time.Second)
 		txControl.RigControlTcp(config.RigCtldListenAddr, config.RigCtldListenPort, "T 0")

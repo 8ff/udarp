@@ -10,21 +10,27 @@ func encodeGridLocator(grid string) uint16 {
 	firstNumber := grid[2] - '0'
 	secondNumber := grid[3] - '0'
 
-	encoded := (uint16(firstLetter) << 10) | (uint16(secondLetter) << 5) | (uint16(firstNumber) << 2) | uint16(secondNumber)
+	encoded := (uint16(firstLetter) * 10 * 24 * 24) + (uint16(secondLetter) * 10 * 24) + (uint16(firstNumber) * 24) + uint16(secondNumber)
 	return encoded
 }
 
 func decodeGridLocator(encoded uint16) string {
-	firstLetter := (encoded >> 10) & 0x1F
-	secondLetter := (encoded >> 5) & 0x1F
-	firstNumber := (encoded >> 2) & 0x7
-	secondNumber := encoded & 0x3
+	secondNumber := encoded % 24
+	encoded /= 24
+
+	firstNumber := encoded % 10
+	encoded /= 10
+
+	secondLetter := encoded % 24
+	encoded /= 24
+
+	firstLetter := encoded
 
 	return string(firstLetter+'A') + string(secondLetter+'A') + string(firstNumber+'0') + string(secondNumber+'0')
 }
 
 func main() {
-	gridLocator := "FN03"
+	gridLocator := "KP12"
 	encoded := encodeGridLocator(gridLocator)
 	fmt.Printf("Encoded grid locator for %s: %x %016b\n", gridLocator, encoded, encoded)
 

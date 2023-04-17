@@ -11,8 +11,9 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
+	"crypto/rand"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -27,7 +28,9 @@ import (
 	"time"
 
 	"github.com/8ff/maidenhead"
+	"github.com/8ff/udarp/pkg/misc"
 	"github.com/dgraph-io/badger/v3"
+	"github.com/minio/highwayhash"
 )
 
 // This contains a liste of sha hashes of each report, when we process it we need to check if its on the list, if so, skip it
@@ -61,8 +64,8 @@ type Report struct {
 }
 
 var CurrentReports []Report
-
 var PSKReporterLog []ReceptionReports
+var hashKey = make([]byte, 32)
 
 // Define Geometry struct
 type GeoJSONGeometry struct {
@@ -172,27 +175,47 @@ func calculateDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	return EarthRadius * c
 }
 
-// Function that checks if report hash is in the ReportHashHistory array
 func checkReportHash(report Report) bool {
 	// If the ReportHashHistory len is more than 1M, clear it
-	if len(ReportHashHistory) > 1000000 {
+	if len(ReportHashHistory) > 10000000 {
 		ReportHashHistory = nil
+	}
+
+	// Generate the hash key if it's empty
+	if len(hashKey) == 0 {
+		hashKey = make([]byte, 32)
+		_, err := rand.Read(hashKey)
+		if err != nil {
+			panic("Failed to generate a random key")
+		}
+	}
+
+	// Create a HighwayHash instance
+	h, err := highwayhash.New(hashKey)
+	if err != nil {
+		// Handle error
 	}
 
 	// Create a hash of the report
 	reportString := fmt.Sprintf("%v", report)
-	reportHash := sha256.Sum256([]byte(reportString))
+	_, err = io.Copy(h, strings.NewReader(reportString))
+	if err != nil {
+		// Handle error
+	}
+
+	reportHash := h.Sum(nil)
+	hashString := hex.EncodeToString(reportHash)
 
 	// Check if the report hash is in the ReportHashHistory array
 	for _, hash := range ReportHashHistory {
-		if hash == fmt.Sprintf("%x", reportHash) {
+		if hash == hashString {
 			// fmt.Printf("Found existing report hash: %x\n", reportHash)
 			return true
 		}
 	}
 
 	// Add the report hash to the ReportHashHistory array
-	ReportHashHistory = append(ReportHashHistory, fmt.Sprintf("%x", reportHash))
+	ReportHashHistory = append(ReportHashHistory, hashString)
 
 	// If we get here, the report hash is not in the ReportHashHistory array
 	return false
@@ -611,7 +634,9 @@ func ProcessPSKReporterReports111(reportsData ReceptionReports) []Report {
 	return result
 }
 
-func ProcessWSPRReports(reportChan chan Report, query string) error {
+func ProcessWSPRReports(reportChan chan []Report, query string) error {
+	processedReports := make([]Report, 0)
+
 	resp, e := http.Get("http://db1.wspr.live/?query=" + url.QueryEscape(query))
 	if e != nil {
 		return e
@@ -622,15 +647,17 @@ func ProcessWSPRReports(reportChan chan Report, query string) error {
 		return e
 	}
 
-	// ********** DEBUG ********** //
-	var foundRecords int
-	var addedRecords int
-
 	lines := strings.Split(string(body), "\n")
-	fmt.Printf("Fetched %d WSPR reports\n", len(lines)-1)
-	for _, line := range lines {
-		tokens := strings.Split(line, ",")
+	misc.Log("debug", fmt.Sprintf("Fetched %d WSPR reports", len(lines)-1))
+	// First line contains these fields at these indexes:
+	for i, line := range lines {
 
+		// Print i every 1000 lines
+		if i%1000 == 0 {
+			misc.Log("debug", fmt.Sprintf("WSPR Processing line %d", i))
+		}
+
+		tokens := strings.Split(line, ",")
 		if line == "" { // Skip empty lines
 			continue
 		}
@@ -651,6 +678,7 @@ func ProcessWSPRReports(reportChan chan Report, query string) error {
 		}
 
 		wsprEntry.ReportTime = utcTime.Unix()
+
 		wsprEntry.Receiver = strings.Trim(tokens[3], "\"")
 		wsprEntry.ReceiverLat, e = strconv.ParseFloat(tokens[4], 64)
 		if e != nil {
@@ -667,6 +695,7 @@ func ProcessWSPRReports(reportChan chan Report, query string) error {
 		wsprEntry.ReceiverLocator = strings.Trim(tokens[6], "\"")
 
 		wsprEntry.Sender = strings.Trim(tokens[7], "\"")
+
 		wsprEntry.SenderLat, e = strconv.ParseFloat(tokens[8], 64)
 		if e != nil {
 			fmt.Printf("unable to parse tx_lat: %s\n", tokens[19])
@@ -714,26 +743,21 @@ func ProcessWSPRReports(reportChan chan Report, query string) error {
 
 		wsprEntry.Distance = calculateDistance(wsprEntry.SenderLat, wsprEntry.SenderLon, wsprEntry.ReceiverLat, wsprEntry.ReceiverLon)
 
-		// ********** DEBUG ********** //
-		if wsprEntry.Sender == "VA3SYS" {
-			foundRecords++
-		}
-
 		// Send to channel
 		if !checkReportHash(wsprEntry) {
-			if wsprEntry.Sender == "VA3SYS" {
-				addedRecords++
-			}
-			reportChan <- wsprEntry
+			processedReports = append(processedReports, wsprEntry)
 		}
 	}
 
-	// ********** DEBUG ********** //
-	fmt.Printf("Found %d VA3SYS reports, sent %d reports\n", foundRecords, addedRecords)
+	misc.Log("debug", "WSPR Report processing done.")
+	reportChan <- processedReports
+	misc.Log("debug", "WSPR Reports sent to channel.")
+
 	return nil
 }
 
-func ProcessPSKReporterReports(reportChan chan Report) error {
+func ProcessPSKReporterReports(reportChan chan []Report) error {
+	processedReports := make([]Report, 0)
 	var reports ReceptionReports
 
 	xmlData, err := getXml("https://retrieve.pskreporter.info/query")
@@ -746,7 +770,7 @@ func ProcessPSKReporterReports(reportChan chan Report) error {
 		return err
 	}
 
-	fmt.Printf("Fetched %d PSKReporter reports\n", len(reports.ReceptionReport))
+	misc.Log("debug", fmt.Sprintf("Fetched %d PSKReporter reports", len(reports.ReceptionReport)))
 	for _, report := range reports.ReceptionReport {
 
 		if len(report.ReceiverLocator) > 6 {
@@ -802,9 +826,12 @@ func ProcessPSKReporterReports(reportChan chan Report) error {
 
 		if !checkReportHash(report) {
 			// Send to channel
-			reportChan <- report
+			processedReports = append(processedReports, report)
 		}
 	}
+
+	reportChan <- processedReports
+	misc.Log("debug", "PSKReporter Reports processed")
 
 	return nil
 }
@@ -856,14 +883,14 @@ func getReportsByTime(db *badger.DB, startTime, endTime int64) ([]Report, error)
 	return reports, nil
 }
 
-func storeReports(reportChan chan Report, db *badger.DB) {
+func storeReports(reportChan chan []Report, db *badger.DB) {
 	var reports []Report
 	ticker := time.NewTicker(1 * time.Minute)
 
 	for {
 		select {
-		case report := <-reportChan:
-			reports = append(reports, report)
+		case reports := <-reportChan:
+			reports = append(reports, reports...)
 		case <-ticker.C:
 			if len(reports) > 0 {
 				// Store reports to the database
@@ -929,7 +956,7 @@ func countRecords(db *badger.DB) (int, error) {
 
 func main() {
 	GlobalConfig = Config{
-		DBPath: "/tmp/uartdb",
+		DBPath: "/tmp/udarpdb",
 	}
 
 	var err error
@@ -942,7 +969,7 @@ func main() {
 	defer GlobalConfig.DB.Close()
 
 	// Create a channel to store reports
-	ReportChan := make(chan Report)
+	ReportChan := make(chan []Report)
 	go storeReports(ReportChan, GlobalConfig.DB)
 
 	// Get reports every minute

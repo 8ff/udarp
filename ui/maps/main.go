@@ -889,8 +889,8 @@ func storeReports(reportChan chan []Report, db *badger.DB) {
 
 	for {
 		select {
-		case reports := <-reportChan:
-			reports = append(reports, reports...)
+		case reportBatch := <-reportChan:
+			reports = append(reports, reportBatch...)
 		case <-ticker.C:
 			if len(reports) > 0 {
 				// Store reports to the database
@@ -901,7 +901,7 @@ func storeReports(reportChan chan []Report, db *badger.DB) {
 						return err
 					}
 
-					entry := badger.NewEntry([]byte(tsKey), data).WithTTL(24 * time.Hour)
+					entry := badger.NewEntry([]byte(tsKey), data).WithTTL(48 * time.Hour)
 					return txn.SetEntry(entry)
 				})
 

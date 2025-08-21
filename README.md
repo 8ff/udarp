@@ -1,14 +1,23 @@
 # Universal Digital Radio Protocol written in Golang
 ![logo](media/logo.svg)
 
-`UDARP` is an advanced digital radio protocol that enables reliable HF communication in noisy environments. Its flexibility offers a wide range of features, including messaging, control, BBS, SMS, email, and beacons, and is designed to work with low power transmitters. Whether you need to establish communication in remote areas or transmit data over long distances, UDARP provides a powerful and efficient solution.
+`UDARP` is an advanced digital radio protocol that enables reliable HF communication in noisy environments. Its flexibility offers a wide range of features, including messaging, control, BBS, SMS, ema[...]
+
+---
+
+## Project Status Update 🚦
+
+**August 2025:**  
+The UDARP project has not been abandoned! I'm now back working on it again, but development will continue as time allows. Please note that the Maps functionality is currently down, but there's still a plan to bring it back in future updates. Thank you for your continued interest and support!
+
+---
 
 ## Announcing the New Maps Service: [map.udarp.com](http://map.udarp.com) 🎉 🥳 🍾
-Introducing new, free maps service at [map.udarp.com](http://map.udarp.com)! Visualize UDARP, WSPR, FT4/8, VARAC, JT65 and other transmissions for a deeper understanding of radio spectrum and signal performance tracking. Ideal for amateurs, professionals, or radio enthusiasts, explore signal data through interactive maps at [map.udarp.com](http://map.udarp.com)!
+Introducing new, free maps service at [map.udarp.com](http://map.udarp.com)! Visualize UDARP, WSPR, FT4/8, VARAC, JT65 and other transmissions for a deeper understanding of radio spectrum and signal p[...]
 ![map](media/map_demo.png)
 
 ## Join the UDARP Community 🎉
-We invite you to become a part of our growing community of developers, enthusiasts, and users who share a passion for UDARP. Connect with like-minded individuals, exchange ideas, discuss features, and contribute to the project's growth. To get started, join our vibrant community on [Slack](https://join.slack.com/t/udarp/shared_invite/zt-1sd4e2l39-R2pdafaylJ0uCc7wmhYioQ) and [Groups.io](https://groups.io/g/udarp/signup?u=8269483101481904438). By participating in these platforms, you'll gain access to valuable resources, receive support from fellow members, and stay updated on the latest news and announcements. Don't miss this opportunity to collaborate, learn, and help shape the future of UDARP!
+We invite you to become a part of our growing community of developers, enthusiasts, and users who share a passion for UDARP. Connect with like-minded individuals, exchange ideas, discuss features, and[...]
 
 ## Usage
 ### Run
@@ -30,7 +39,7 @@ cd cmd/udarp
 ```
 
 ### RigCtl (Hamlib) https://github.com/Hamlib/Hamlib
- Hamlibs' rigctld is used to control the radios PTT and frequency, and the binaries for it can be found in pkg/txControl/bin, which are embedded into the binary at compile time. UDARP automatically determines the OS and architecture and uses the correct binary to start rigctld.
+ Hamlibs' rigctld is used to control the radios PTT and frequency, and the binaries for it can be found in pkg/txControl/bin, which are embedded into the binary at compile time. UDARP automatically de[...]
 
 ## In progress:
 - [ ] Real life stress testing
@@ -45,4 +54,4 @@ cd cmd/udarp
 - [ ] Web UI
 
 ## Issues
-If you encounter any issues, concerns, or simply wish to get in touch, we invite you to join our dedicated [Slack](https://join.slack.com/t/udarp/shared_invite/zt-1sd4e2l39-R2pdafaylJ0uCc7wmhYioQ) and [Groups.io](https://groups.io/g/udarp/signup?u=8269483101481904438) spaces.
+If you encounter any issues, concerns, or simply wish to get in touch, we invite you to join our dedicated [Slack](https://join.slack.com/t/udarp/shared_invite/zt-1sd4e2l39-R2pdafaylJ0uCc7wmhYioQ) and[...]
